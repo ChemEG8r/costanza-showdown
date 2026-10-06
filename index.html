@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Costanza Showdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  /* Single-theme game-show stage. Every color painted explicitly. */
+  :root {
+    --bg: #1A1033;
+    --surface: #271A47;
+    --ink: #F6F2FF;
+    --muted: #AC9FD1;
+    --gold: #FFD166;
+    --gold-soft: rgba(255, 209, 102, 0.15);
+    --on-gold: #1A1033;
+    --vj: #53C8F0;
+    --vj-soft: rgba(83, 200, 240, 0.16);
+    --ava: #E79BFF;
+    --ava-soft: rgba(231, 155, 255, 0.16);
+    --good: #5FD49A;
+    --good-soft: rgba(95, 212, 154, 0.16);
+    --bad: #FF8F8F;
+    --bad-soft: rgba(255, 143, 143, 0.14);
+    --line: #3B2B63;
+    --buzz: #FF4D5E;
+    --buzz-dark: #C92B3B;
+    --moonlit: #F6EBCF;
+    --moondark: #2B2152;
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background:
+      radial-gradient(1px 1px at 16% 20%, rgba(255,255,255,0.5) 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 76% 12%, rgba(255,209,102,0.5) 50%, transparent 51%),
+      radial-gradient(1px 1px at 48% 38%, rgba(255,255,255,0.3) 50%, transparent 51%),
+      radial-gradient(1px 1px at 26% 72%, rgba(231,155,255,0.4) 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 88% 60%, rgba(83,200,240,0.4) 50%, transparent 51%),
+      radial-gradient(1px 1px at 10% 92%, rgba(255,255,255,0.3) 50%, transparent 51%),
+      var(--bg);
+    background-attachment: fixed;
+    font-family: "Atkinson Hyperlegible", "Avenir Next", system-ui, sans-serif;
+    font-size: 17px; line-height: 1.5; min-height: 100vh;
+    -webkit-text-size-adjust: 100%; overscroll-behavior: none;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 14px 14px 40px; }
+  h1, h2, h3 { font-family: "Baloo 2", system-ui, sans-serif; font-weight: 800; text-wrap: balance; margin: 0; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+  .brandbar { text-align: center; padding: 6px 0 12px; }
+  .brandbar h1 { font-size: 26px; }
+  .brandbar h1 span { color: var(--gold); }
+  .sub { color: var(--muted); font-size: 14px; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 18px 16px; margin-bottom: 12px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; text-align: center;
+    font: inherit; font-weight: 700; cursor: pointer;
+    border-radius: 14px; padding: 12px 18px; min-height: 50px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    touch-action: manipulation;
+  }
+  .btn:focus-visible, .opt:focus-visible, #buzzer:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .btn-gold { background: var(--gold); border-color: var(--gold); color: var(--on-gold); font-size: 17px; }
+  .btn-good { background: var(--good); border-color: var(--good); color: var(--on-gold); }
+  .btn-bad  { background: var(--bad); border-color: var(--bad); color: var(--on-gold); }
+  .btn-wide { width: 100%; }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; min-width: 120px; }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+
+  /* role pick */
+  .roles { display: grid; gap: 12px; margin-top: 14px; }
+  .rolebtn { font-family: "Baloo 2", system-ui, sans-serif; font-size: 24px; font-weight: 800; min-height: 84px; border-width: 3px; border-radius: 20px; }
+  .role-vj { border-color: var(--vj); color: var(--vj); background: var(--vj-soft); }
+  .role-ava { border-color: var(--ava); color: var(--ava); background: var(--ava-soft); }
+  .role-host { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+
+  /* scoreboard */
+  .scorebar { display: flex; gap: 10px; margin-bottom: 12px; }
+  .scorebox { flex: 1; text-align: center; border-radius: 14px; padding: 8px 6px; border: 2px solid var(--line); background: var(--surface); }
+  .scorebox .name { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 15px; }
+  .scorebox .pts { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-weight: 600; }
+  .scorebox.vj { border-color: var(--vj); } .scorebox.vj .name { color: var(--vj); }
+  .scorebox.ava { border-color: var(--ava); } .scorebox.ava .name { color: var(--ava); }
+  .scorebox .adj { display: flex; gap: 6px; justify-content: center; margin-top: 4px; }
+  .scorebox .adj button { font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 2px 10px; cursor: pointer; }
+
+  /* player stage */
+  .stage { text-align: center; padding: 26px 14px; }
+  .stage .big { font-family: "Baloo 2", sans-serif; font-size: 26px; font-weight: 800; }
+  .stage .emoji { font-size: 52px; display: block; margin-bottom: 8px; }
+  .stage .note { color: var(--muted); margin-top: 8px; font-size: 15px; }
+
+  #buzzer {
+    width: min(78vw, 330px); height: min(78vw, 330px); border-radius: 50%;
+    border: 10px solid var(--buzz-dark); background: radial-gradient(circle at 35% 30%, #FF7B88, var(--buzz) 60%);
+    color: #FFF; font-family: "Baloo 2", sans-serif; font-size: 44px; font-weight: 800;
+    box-shadow: 0 10px 0 var(--buzz-dark), 0 16px 30px rgba(0,0,0,0.5);
+    cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  #buzzer:active { transform: translateY(6px); box-shadow: 0 4px 0 var(--buzz-dark), 0 8px 18px rgba(0,0,0,0.5); }
+  .buzzwrap { display: flex; justify-content: center; padding: 10px 0 16px; }
+
+  .qtext { font-size: 20px; font-weight: 700; margin: 2px 0 12px; }
+  .moonfig { display: flex; justify-content: center; margin: 2px 0 12px; }
+  .opts { display: grid; gap: 9px; }
+  .opt {
+    font: inherit; font-size: 17px; font-weight: 700; text-align: left; cursor: pointer;
+    border: 2px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink);
+    padding: 14px; min-height: 54px; touch-action: manipulation;
+  }
+  .opt.sel { border-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
+  .opt.right { border-color: var(--good); background: var(--good-soft); color: var(--good); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+  .opt:disabled { cursor: default; opacity: 1; }
+
+  /* host */
+  .panel-title { font-size: 16px; color: var(--gold); margin-bottom: 8px; }
+  .ptsel { display: flex; gap: 8px; margin: 8px 0 2px; }
+  .ptsel button { flex: 1; font: inherit; font-weight: 700; border-radius: 10px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); min-height: 42px; cursor: pointer; }
+  .ptsel button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+  .feed { border: 1px dashed var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 15px; min-height: 48px; }
+  .feed b.vj { color: var(--vj); } .feed b.ava { color: var(--ava); }
+  details.cat { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: var(--surface); }
+  details.cat summary { cursor: pointer; list-style: none; font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 16px; padding: 11px 12px; }
+  details.cat summary::-webkit-details-marker { display: none; }
+  .ditem { border-top: 1px solid var(--line); padding: 10px 12px; }
+  .ditem.used { opacity: 0.4; }
+  .ditem .dq { font-size: 14.5px; font-weight: 700; }
+  .ditem .da { font-size: 13px; color: var(--good); margin-top: 2px; }
+  .ditem .dbtns { display: flex; gap: 6px; margin-top: 7px; }
+  .ditem .dbtns button { font: inherit; font-size: 13.5px; font-weight: 700; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 7px 11px; cursor: pointer; }
+  .hostq { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+  .hostq .hq { font-weight: 700; }
+  .hostq .ha { color: var(--good); font-weight: 700; margin-top: 4px; }
+  .statusline { color: var(--muted); font-size: 13.5px; text-align: center; margin-top: 10px; }
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brandbar"><h1>🎤 Costanza <span>Showdown</span></h1><div class="sub" id="subline">Space-test family game night</div></div>
+  <div id="app"></div>
+</div>
+<canvas id="confetti" hidden></canvas>
+
+<script>
+"use strict";
+
+/* ================= moon drawings for picture questions ================= */
+const PHASE_ORDER = ["New moon", "Waxing crescent", "First quarter", "Waxing gibbous",
+                     "Full moon", "Waning gibbous", "Third quarter", "Waning crescent"];
+function moonSVG(name, size) {
+  if (!PHASE_ORDER.includes(name)) return "";
+  size = size || 110;
+  const lit = "var(--moonlit)", dark = "var(--moondark)";
+  const rightHalf = `<path d="M32 3 A29 29 0 0 1 32 61 Z" fill="${lit}"/>`;
+  const leftHalf  = `<path d="M32 3 A29 29 0 0 0 32 61 Z" fill="${lit}"/>`;
+  const ell = f => `<ellipse cx="32" cy="32" rx="13" ry="29" fill="${f}"/>`;
+  let inner = "";
+  if (name === "Waxing crescent") inner = rightHalf + ell(dark);
+  else if (name === "First quarter") inner = rightHalf;
+  else if (name === "Waxing gibbous") inner = rightHalf + ell(lit);
+  else if (name === "Full moon") inner = `<circle cx="32" cy="32" r="29" fill="${lit}"/>`;
+  else if (name === "Waning gibbous") inner = leftHalf + ell(lit);
+  else if (name === "Third quarter") inner = leftHalf;
+  else if (name === "Waning crescent") inner = leftHalf + ell(dark);
+  return `<svg viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="moon phase">
+    <circle cx="32" cy="32" r="29" fill="${dark}"/>${inner}
+    <circle cx="32" cy="32" r="29" fill="none" stroke="#9A8CC9" stroke-width="1.5"/></svg>`;
+}
+
+/* ================= the question deck (overlap of VJ's and Ava's tests) ================= */
+const DECK = [];
+for (const p of PHASE_ORDER) {
+  const others = PHASE_ORDER.filter(x => x !== p);
+  DECK.push({ cat: "🌙 Moon Pictures", q: "Name this moon phase!", fig: p,
+    o: [p, ...others.sort(() => 0.5 - Math.random()).slice(0, 3)] });
+}
+const RAW = {
+  "🪐 Planet Parade": [
+    ["Which planet is the LARGEST?", "Jupiter", "Saturn", "Neptune", "Earth"],
+    ["Which planet is CLOSEST to the sun?", "Mercury", "Venus", "Mars", "Earth"],
+    ["Which planet is called 'the red planet'?", "Mars", "Venus", "Jupiter", "Mercury"],
+    ["Which planet has the famous bright rings?", "Saturn", "Uranus", "Jupiter", "Mars"],
+    ["Which planet has the Great RED Spot?", "Jupiter", "Neptune", "Mars", "Saturn"],
+    ["Fastest winds + the Great DARK Spot?", "Neptune", "Uranus", "Jupiter", "Venus"],
+    ["Which planet spins tipped over like a fallen top?", "Uranus", "Neptune", "Saturn", "Mercury"],
+    ["Which planet is the HOTTEST (thick clouds trap its heat)?", "Venus", "Mercury", "Mars", "Jupiter"],
+    ["'The blue planet' with liquid-water oceans?", "Earth", "Neptune", "Uranus", "Venus"],
+    ["What sits between Mars and Jupiter?", "The asteroid belt", "The Kuiper belt", "A black hole", "Pluto"],
+    ["Mercury, Venus, Earth… which planet is next?", "Mars", "Jupiter", "Saturn", "Neptune"],
+    ["Why is Pluto NOT a planet?", "It hasn't cleared its orbit of debris", "It is too cold", "It is too far away", "It has no moons"],
+    ["The INNER planets are…", "Small and rocky", "Huge and made of gas", "All ringed", "Frozen solid"],
+    ["The OUTER planets are made mostly of…", "Hydrogen and helium gas", "Rock", "Metal", "Water"],
+  ],
+  "🚀 Space Words": [
+    ["A streak of light burning up in the sky:", "Meteor", "Meteorite", "Meteoroid", "Comet"],
+    ["A space rock that HITS the ground:", "Meteorite", "Meteor", "Meteoroid", "Asteroid"],
+    ["A tiny rock still floating in space:", "Meteoroid", "Meteor", "Meteorite", "Moon"],
+    ["Rock, ice, dust, and gas with a glowing tail:", "A comet", "An asteroid", "A star", "A meteor"],
+    ["A comet's tail always points…", "Away from the sun", "Toward the sun", "North", "Down"],
+    ["Which object makes its OWN light?", "A star", "A planet", "A moon", "A comet"],
+    ["A natural object that orbits a planet:", "A moon", "A star", "An asteroid", "A comet"],
+    ["A star pattern that looks like a figure or animal:", "A constellation", "A galaxy", "A phase", "An ellipse"],
+    ["ALL of space and everything in it:", "The universe", "The solar system", "The galaxy", "The sky"],
+    ["ROTATE means…", "Spin on your own axis", "Travel around another object", "Shine", "Fall"],
+    ["REVOLVE means…", "Travel around another object", "Spin in place", "Explode", "Glow"],
+  ],
+  "☀️ Sun & Stars": [
+    ["Which star color is the HOTTEST?", "Blue", "Red", "White", "Yellow"],
+    ["Which star color is the COOLEST?", "Red", "Blue", "White", "Yellow"],
+    ["Star colors from coolest to hottest:", "Red, yellow, white, blue", "Blue, white, yellow, red", "Yellow, red, white, blue", "Red, white, yellow, blue"],
+    ["Why does the sun look bigger than other stars?", "It is much closer to us", "It is the biggest star", "It is newer", "It is hotter"],
+    ["The sun holds more than ___ of the solar system's mass.", "99%", "50%", "75%", "25%"],
+    ["What is the center of our solar system?", "The sun", "Earth", "Jupiter", "The moon"],
+  ],
+  "🌍 Earth Spins": [
+    ["Day and night are caused by…", "Earth's rotation on its axis", "Earth's revolution around the sun", "The moon's orbit", "Clouds"],
+    ["The seasons are caused by…", "Earth's tilt as it revolves around the sun", "Earth getting closer to the sun", "The moon's phases", "The wind"],
+    ["One rotation of Earth takes about…", "24 hours", "365 days", "29.5 days", "7 days"],
+    ["One revolution around the sun takes…", "One year", "One day", "One month", "29.5 days"],
+    ["Which star stays put above the North Pole?", "Polaris", "Sirius", "Venus", "Orion"],
+    ["It's noon here. On the opposite side of Earth it is…", "Night", "Sunrise", "Also noon", "Sunset"],
+    ["Stars appear to rise in the ___ and set in the ___.", "East … west", "West … east", "North … south", "South … north"],
+    ["The moon's phase cycle takes about…", "29.5 days", "24 hours", "7 days", "365 days"],
+    ["WAXING means the lit part is…", "Growing", "Shrinking", "Gone", "Blue"],
+    ["WANING means the lit part is…", "Shrinking", "Growing", "Exploding", "Full"],
+  ],
+};
+for (const cat of Object.keys(RAW)) for (const r of RAW[cat]) DECK.push({ cat, q: r[0], o: r.slice(1) });
+
+/* ================= shared helpers ================= */
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const NAMES = { vj: "VJ", ava: "Ava" };
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+async function api(path, body) {
+  const res = await fetch("/api/" + path, body === undefined
+    ? { cache: "no-store" }
+    : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error("api " + path + " " + res.status);
+  return res.json();
+}
+function beep(freq, ms) {
+  try {
+    const ctx = beep.ctx = beep.ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = freq; o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ms / 1000);
+    o.start(); o.stop(ctx.currentTime + ms / 1000);
+  } catch {}
+}
+
+/* ================= state ================= */
+const app = document.getElementById("app");
+const subline = document.getElementById("subline");
+let role = null;
+try { role = localStorage.getItem("showdown-role"); } catch {}
+let G = null;            // last game state from server
+let S = { buzz: {}, ans: {} }; // last round status
+let myAnswered = null;   // choice index I picked this round
+let myBuzzRound = 0;
+let usedDeck = new Set();
+let hostCurrent = null;  // deck item host is reading aloud
+let lastRenderKey = "";
+let celebrated = 0;
+
+function setRole(r) {
+  role = r;
+  try { localStorage.setItem("showdown-role", r); } catch {}
+  render(true);
+}
+
+/* ================= polling ================= */
+async function tick() {
+  if (!role) return;
+  try {
+    const g = await api("game");
+    const active = g.mode !== "idle" && g.phase !== "closed";
+    let s = { buzz: {}, ans: {} };
+    if (active || role === "host") s = await api("status?round=" + g.round);
+    const changed = JSON.stringify([g, s]) !== JSON.stringify([G, S]);
+    G = g; S = s;
+    if (changed) render();
+  } catch { /* offline blip — keep last screen */ }
+}
+setInterval(tick, 1000);
+
+/* host pushes a new state */
+async function setGame(patch) {
+  const g = Object.assign({}, G || DEFAULTG, patch, { ts: Date.now() });
+  G = g;
+  render(true);
+  try { await api("game", g); } catch {}
+}
+const DEFAULTG = { ts: 0, round: 0, mode: "idle", phase: "closed", scores: { vj: 0, ava: 0 }, locked: [], q: null, winner: null, correctText: null, award: 100, msg: "" };
+
+/* ================= render ================= */
+function render(force) {
+  const key = JSON.stringify([role, G, S, myAnswered, hostCurrent, [...usedDeck]]);
+  if (!force && key === lastRenderKey) return;
+  lastRenderKey = key;
+  if (!role) return renderRolePick();
+  if (role === "host") return renderHost();
+  return renderPlayer();
+}
+
+function renderRolePick() {
+  subline.textContent = "Who's holding this phone?";
+  app.innerHTML = `
+    <div class="card"><div class="roles">
+      <button class="btn rolebtn role-vj" data-r="vj">I'm VJ 🧑‍🚀</button>
+      <button class="btn rolebtn role-ava" data-r="ava">I'm Ava 👩‍🚀</button>
+      <button class="btn rolebtn role-host" data-r="host">I'm the Host 🎤</button>
+    </div></div>
+    <p class="statusline">Everyone opens this same link and picks their seat.</p>`;
+  app.querySelectorAll("[data-r]").forEach(b => b.addEventListener("click", () => setRole(b.dataset.r)));
+}
+
+function scoreboardHTML(withAdj) {
+  const g = G || DEFAULTG;
+  const adj = p => withAdj ? `<div class="adj">
+      <button data-adj="${p}" data-d="-100">−100</button>
+      <button data-adj="${p}" data-d="100">+100</button></div>` : "";
+  return `<div class="scorebar">
+    <div class="scorebox vj"><div class="name">VJ</div><div class="pts">${g.scores.vj}</div>${adj("vj")}</div>
+    <div class="scorebox ava"><div class="name">Ava</div><div class="pts">${g.scores.ava}</div>${adj("ava")}</div>
+  </div>`;
+}
+
+/* ---------------- PLAYER ---------------- */
+function renderPlayer() {
+  const me = role, g = G || DEFAULTG;
+  subline.textContent = NAMES[me] + "'s controller";
+  let body = "";
+
+  if (g.mode === "idle" || g.phase === "closed") {
+    myAnswered = null;
+    body = `<div class="card stage"><span class="emoji">🛋️</span>
+      <div class="big">${g.msg ? esc(g.msg) : "Waiting for Dad…"}</div>
+      <div class="note">Next round is coming. Hands on buzzers!</div></div>`;
+  } else if (g.mode === "buzzer") {
+    const myBuzz = S.buzz[me], otherBuzz = S.buzz[me === "vj" ? "ava" : "vj"];
+    const lockedOut = (g.locked || []).includes(me);
+    if (g.phase === "judged") {
+      body = judgedCard(me, g);
+    } else if (lockedOut) {
+      body = `<div class="card stage"><span class="emoji">🙈</span><div class="big">Locked out!</div>
+        <div class="note">${esc(NAMES[me === "vj" ? "ava" : "vj"])} can steal this one…</div></div>`;
+    } else if (myBuzz) {
+      const first = !otherBuzz || myBuzz <= otherBuzz;
+      body = `<div class="card stage"><span class="emoji">${first ? "🔔" : "🐢"}</span>
+        <div class="big">${first ? "You buzzed FIRST!" : "Buzzed — but " + esc(NAMES[me === "vj" ? "ava" : "vj"]) + " was faster"}</div>
+        <div class="note">${first ? "Give your answer out loud!" : "Wait and hope…"}</div></div>`;
+    } else {
+      body = `<div class="buzzwrap"><button id="buzzer">BUZZ!</button></div>
+        <p class="statusline">Listen to the question — then SMASH it.</p>`;
+    }
+  } else if (g.mode === "push" && g.q) {
+    if (g.phase === "judged") {
+      body = judgedCard(me, g);
+    } else {
+      const mine = S.ans[me];
+      const pickedIdx = mine ? mine.c : myAnswered;
+      body = `<div class="card">
+        <p class="qtext">${esc(g.q.text)}</p>
+        ${g.q.fig ? `<div class="moonfig">${moonSVG(g.q.fig)}</div>` : ""}
+        <div class="opts">${g.q.opts.map((o, i) =>
+          `<button class="opt ${pickedIdx === i ? "sel" : ""}" data-i="${i}" ${pickedIdx !== null && pickedIdx !== undefined ? "disabled" : ""}>${esc(o)}</button>`).join("")}</div>
+        ${pickedIdx !== null && pickedIdx !== undefined ? `<p class="statusline">🔒 Locked in! Waiting for the result…</p>` : `<p class="statusline">Fastest CORRECT answer wins!</p>`}
+      </div>`;
+    }
+  }
+
+  app.innerHTML = scoreboardHTML(false) + body;
+
+  const buzzer = document.getElementById("buzzer");
+  if (buzzer) buzzer.addEventListener("pointerdown", async () => {
+    buzzer.disabled = true;
+    if (navigator.vibrate) navigator.vibrate(60);
+    beep(880, 180);
+    try { await api("buzz", { round: g.round, player: me }); } catch {}
+    tick();
+  }, { once: true });
+
+  app.querySelectorAll(".opt:not([disabled])").forEach(b => b.addEventListener("pointerdown", async () => {
+    if (myAnswered !== null && myAnswered !== undefined) return;
+    myAnswered = Number(b.dataset.i);
+    if (navigator.vibrate) navigator.vibrate(40);
+    render(true);
+    try { await api("answer", { round: g.round, player: me, choice: myAnswered }); } catch {}
+    tick();
+  }));
+}
+
+function judgedCard(me, g) {
+  const iWon = g.winner === me;
+  const noWinner = !g.winner;
+  if (iWon && celebrated !== g.round) { celebrated = g.round; confetti(); if (navigator.vibrate) navigator.vibrate([80, 60, 120]); }
+  return `<div class="card stage">
+    <span class="emoji">${iWon ? "🏆" : noWinner ? "😶" : "💔"}</span>
+    <div class="big">${iWon ? "+" + g.award + " for you!" : noWinner ? "Nobody got it!" : esc(NAMES[g.winner]) + " takes it!"}</div>
+    ${g.correctText ? `<div class="note">Answer: <b>${esc(g.correctText)}</b></div>` : ""}
+  </div>`;
+}
+
+/* ---------------- HOST ---------------- */
+function renderHost() {
+  const g = G || DEFAULTG;
+  subline.textContent = "Host control room";
+  const buzzFeed = () => {
+    const bz = Object.entries(S.buzz).sort((a, b) => a[1] - b[1]);
+    if (g.mode === "buzzer" && g.phase === "open") {
+      if (!bz.length) return `Buzzers are LIVE — nobody has buzzed yet…`;
+      const [p1, t1] = bz[0];
+      let line = `🔔 <b class="${p1}">${NAMES[p1]}</b> buzzed first`;
+      if (bz[1]) line += ` — beat ${NAMES[bz[1][0]]} by ${((bz[1][1] - t1) / 1000).toFixed(2)}s`;
+      return line;
+    }
+    return "";
+  };
+  const ansFeed = () => {
+    if (g.mode !== "push" || !g.q) return "";
+    const line = p => {
+      const a = S.ans[p];
+      if (!a) return `<b class="${p}">${NAMES[p]}</b>: …thinking`;
+      const ok = a.c === g.q.correct;
+      return `<b class="${p}">${NAMES[p]}</b>: ${ok ? "✅" : "❌"} ${esc(g.q.opts[a.c] || "?")}`;
+    };
+    return line("vj") + "<br>" + line("ava");
+  };
+  const pushWinner = () => {
+    if (g.mode !== "push" || !g.q) return null;
+    const ok = Object.entries(S.ans).filter(([p, a]) => a.c === g.q.correct).sort((a, b) => a[1].ts - b[1].ts);
+    return ok.length ? ok[0][0] : null;
+  };
+
+  let panel = "";
+  if (g.mode === "idle" || g.phase === "closed" || g.phase === "judged") {
+    panel = `<div class="card">
+      <h3 class="panel-title">🎙️ Round controls</h3>
+      <div class="ptsel">${[100, 200, 300].map(v =>
+        `<button data-pts="${v}" aria-pressed="${g.award === v}">${v} pts</button>`).join("")}</div>
+      <div class="btn-row">
+        <button class="btn btn-gold btn-wide" id="openBuzz">🔔 Open buzzers (read a question aloud)</button>
+      </div>
+      ${hostCurrent ? `<div class="hostq"><div class="hq">${esc(hostCurrent.q)}${hostCurrent.fig ? " (" + esc(hostCurrent.fig) + " — picture question: SEND it instead)" : ""}</div>
+        <div class="ha">Answer: ${esc(hostCurrent.o[0])}</div></div>` : ""}
+      ${g.phase === "judged" ? `<div class="btn-row"><button class="btn btn-wide" id="clearRound">Next round ➡️ (clear screens)</button></div>` : ""}
+    </div>`;
+  } else if (g.mode === "buzzer") {
+    const bz = Object.entries(S.buzz).sort((a, b) => a[1] - b[1]);
+    const first = bz.length ? bz[0][0] : null;
+    panel = `<div class="card">
+      <h3 class="panel-title">🔔 Buzzer round — ${g.award} pts</h3>
+      ${hostCurrent ? `<div class="hostq"><div class="hq">${esc(hostCurrent.q)}</div><div class="ha">Answer: ${esc(hostCurrent.o[0])}</div></div>` : ""}
+      <div class="feed">${buzzFeed()}</div>
+      <div class="btn-row">
+        <button class="btn btn-good" id="awardFirst" ${first ? "" : "disabled"}>✅ ${first ? NAMES[first] : "…"} correct +${g.award}</button>
+        <button class="btn btn-bad" id="wrongSteal" ${first ? "" : "disabled"}>❌ Wrong — other can steal</button>
+      </div>
+      <div class="btn-row"><button class="btn btn-wide" id="closeRound">Close round (no points)</button></div>
+    </div>`;
+  } else if (g.mode === "push" && g.q) {
+    const w = pushWinner();
+    const both = S.ans.vj && S.ans.ava;
+    panel = `<div class="card">
+      <h3 class="panel-title">📲 On their screens now — ${g.award} pts</h3>
+      <div class="hostq"><div class="hq">${esc(g.q.text)}${g.q.fig ? " — " + esc(g.q.fig) : ""}</div>
+        <div class="ha">Answer: ${esc(g.q.opts[g.q.correct])}</div></div>
+      <div class="feed">${ansFeed()}</div>
+      <div class="btn-row">
+        <button class="btn btn-good" id="awardPush" ${w ? "" : "disabled"}>🏆 ${w ? NAMES[w] + " wins +" + g.award : "No correct answer yet"}</button>
+        <button class="btn btn-bad" id="noWinner" ${both || true ? "" : "disabled"}>Nobody gets it — reveal</button>
+      </div>
+    </div>`;
+  }
+
+  const cats = [...new Set(DECK.map(d => d.cat))];
+  const deck = `<div class="card">
+    <h3 class="panel-title">🗂️ Question deck (both kids' tests)</h3>
+    ${cats.map(c => `<details class="cat"><summary>${esc(c)} (${DECK.filter(d => d.cat === c).length})</summary>
+      ${DECK.map((d, i) => d.cat === c ? `<div class="ditem ${usedDeck.has(i) ? "used" : ""}">
+        <div class="dq">${esc(d.q)}${d.fig ? " 🌙[" + esc(d.fig) + "]" : ""}</div>
+        <div class="da">✔ ${esc(d.o[0])}</div>
+        <div class="dbtns">
+          <button data-send="${i}">📲 Send to phones</button>
+          <button data-read="${i}">🎙️ I'll read it</button>
+        </div></div>` : "").join("")}
+    </details>`).join("")}
+  </div>
+  <div class="btn-row"><button class="btn btn-danger btn-wide" id="resetBtn" style="color:var(--bad)">Reset game (scores to 0)</button></div>
+  <p class="statusline">Kids open this same link on their phones and pick their names.</p>`;
+
+  app.innerHTML = scoreboardHTML(true) + panel + deck;
+
+  app.querySelectorAll("[data-adj]").forEach(b => b.addEventListener("click", () => {
+    const p = b.dataset.adj, d = Number(b.dataset.d);
+    const scores = Object.assign({}, g.scores); scores[p] = Math.max(0, scores[p] + d);
+    setGame({ scores });
+  }));
+  app.querySelectorAll("[data-pts]").forEach(b => b.addEventListener("click", () => setGame({ award: Number(b.dataset.pts) })));
+
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener("click", fn); };
+  on("openBuzz", () => setGame({ round: g.round + 1, mode: "buzzer", phase: "open", locked: [], winner: null, correctText: hostCurrent ? hostCurrent.o[0] : null, msg: "" }));
+  on("awardFirst", () => {
+    const bz = Object.entries(S.buzz).sort((a, b) => a[1] - b[1]);
+    if (!bz.length) return;
+    const p = bz[0][0];
+    const scores = Object.assign({}, g.scores); scores[p] += g.award;
+    beep(1200, 200);
+    setGame({ scores, phase: "judged", winner: p });
+  });
+  on("wrongSteal", () => {
+    const bz = Object.entries(S.buzz).sort((a, b) => a[1] - b[1]);
+    if (!bz.length) return;
+    const locked = [...new Set([...(g.locked || []), bz[0][0]])];
+    if (locked.length >= 2) setGame({ phase: "judged", winner: null });
+    else setGame({ locked });
+  });
+  on("closeRound", () => setGame({ phase: "judged", winner: null }));
+  on("clearRound", () => { hostCurrent = null; setGame({ mode: "idle", phase: "closed", winner: null, q: null, msg: "" }); });
+  on("awardPush", () => {
+    const w = pushWinner(); if (!w) return;
+    const scores = Object.assign({}, g.scores); scores[w] += g.award;
+    beep(1200, 200);
+    setGame({ scores, phase: "judged", winner: w, correctText: g.q.opts[g.q.correct] });
+  });
+  on("noWinner", () => setGame({ phase: "judged", winner: null, correctText: g.q ? g.q.opts[g.q.correct] : null }));
+  on("resetBtn", () => {
+    if (!confirm("Reset the whole game? Scores go back to 0.")) return;
+    usedDeck = new Set(); hostCurrent = null;
+    api("reset", {}).catch(() => {});
+    setGame(Object.assign({}, DEFAULTG, { ts: Date.now() }));
+  });
+  app.querySelectorAll("[data-send]").forEach(b => b.addEventListener("click", () => {
+    const d = DECK[Number(b.dataset.send)];
+    usedDeck.add(Number(b.dataset.send));
+    const order = shuffle(d.o.map((t, i) => i));
+    const opts = order.map(i => d.o[i]);
+    const correct = order.indexOf(0);
+    hostCurrent = null;
+    setGame({ round: g.round + 1, mode: "push", phase: "open", locked: [], winner: null,
+      q: { text: d.q, opts, correct, fig: d.fig || null }, correctText: null, msg: "" });
+  }));
+  app.querySelectorAll("[data-read]").forEach(b => b.addEventListener("click", () => {
+    hostCurrent = DECK[Number(b.dataset.read)];
+    usedDeck.add(Number(b.dataset.read));
+    render(true);
+    window.scrollTo(0, 0);
+  }));
+}
+
+/* ================= confetti ================= */
+function confetti() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = document.getElementById("confetti");
+  cv.hidden = false; cv.width = innerWidth; cv.height = innerHeight;
+  const ctx = cv.getContext("2d");
+  const colors = ["#FFD166", "#53C8F0", "#E79BFF", "#5FD49A", "#FFFFFF"];
+  const bits = Array.from({ length: 140 }, () => ({
+    x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.5,
+    vy: 2 + Math.random() * 3, vx: -1 + Math.random() * 2,
+    s: 5 + Math.random() * 6, r: Math.random() * Math.PI, vr: -0.1 + Math.random() * 0.2,
+    col: colors[Math.floor(Math.random() * colors.length)],
+  }));
+  let frames = 0;
+  (function loop() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (const b of bits) {
+      b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.r);
+      ctx.fillStyle = b.col; ctx.fillRect(-b.s / 2, -b.s / 2, b.s, b.s * 0.6);
+      ctx.restore();
+    }
+    if (++frames < 240) requestAnimationFrame(loop);
+    else { ctx.clearRect(0, 0, cv.width, cv.height); cv.hidden = true; }
+  })();
+}
+
+render(true);
+tick();
+</script>
+</body>
+</html>
