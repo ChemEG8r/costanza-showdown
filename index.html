@@ -254,14 +254,41 @@ async function api(path, body) {
   if (!res.ok) throw new Error("api " + path + " " + res.status);
   return res.json();
 }
-function beep(freq, ms) {
+let _actx = null;
+function audioCtx() {
+  _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
+  return _actx;
+}
+// iOS only allows sound after a tap — unlock on everyone's first touch
+document.addEventListener("pointerdown", () => {
+  try { const c = audioCtx(); if (c.state === "suspended") c.resume(); } catch {}
+}, true);
+function sndBuzz() {  // classic game-show BZZZT
   try {
-    const ctx = beep.ctx = beep.ctx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.value = freq; o.connect(g); g.connect(ctx.destination);
-    g.gain.setValueAtTime(0.18, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ms / 1000);
-    o.start(); o.stop(ctx.currentTime + ms / 1000);
+    const c = audioCtx(), t = c.currentTime;
+    for (const f of [110, 147]) {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "sawtooth"; o.frequency.value = f;
+      o.connect(g); g.connect(c.destination);
+      g.gain.setValueAtTime(0.22, t);
+      g.gain.setValueAtTime(0.22, t + 0.35);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      o.start(t); o.stop(t + 0.55);
+    }
+  } catch {}
+}
+function sndDing() {  // award ding-ding!
+  try {
+    const c = audioCtx();
+    [[880, 0], [1318.5, 0.13]].forEach(([f, dt]) => {
+      const t = c.currentTime + dt;
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      o.connect(g); g.connect(c.destination);
+      g.gain.setValueAtTime(0.25, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      o.start(t); o.stop(t + 0.35);
+    });
   } catch {}
 }
 
@@ -278,6 +305,7 @@ let usedDeck = new Set();
 let hostCurrent = null;  // deck item host is reading aloud
 let lastRenderKey = "";
 let celebrated = 0;
+let heardRound = 0;
 
 function setRole(r) {
   role = r;
@@ -294,6 +322,11 @@ async function tick() {
     let s = { buzz: {}, ans: {} };
     if (active || role === "host") s = await api("status?round=" + g.round);
     const changed = JSON.stringify([g, s]) !== JSON.stringify([G, S]);
+    if (role === "host" && g.mode === "buzzer" && g.phase === "open" &&
+        Object.keys(s.buzz).length > 0 && heardRound !== g.round) {
+      heardRound = g.round;
+      sndBuzz();
+    }
     G = g; S = s;
     if (changed) render();
   } catch { /* offline blip — keep last screen */ }
@@ -392,7 +425,7 @@ function renderPlayer() {
   if (buzzer) buzzer.addEventListener("pointerdown", async () => {
     buzzer.disabled = true;
     if (navigator.vibrate) navigator.vibrate(60);
-    beep(880, 180);
+    sndBuzz();
     try { await api("buzz", { round: g.round, player: me }); } catch {}
     tick();
   }, { once: true });
@@ -522,7 +555,7 @@ function renderHost() {
     if (!bz.length) return;
     const p = bz[0][0];
     const scores = Object.assign({}, g.scores); scores[p] += g.award;
-    beep(1200, 200);
+    sndDing();
     setGame({ scores, phase: "judged", winner: p });
   });
   on("wrongSteal", () => {
@@ -537,7 +570,7 @@ function renderHost() {
   on("awardPush", () => {
     const w = pushWinner(); if (!w) return;
     const scores = Object.assign({}, g.scores); scores[w] += g.award;
-    beep(1200, 200);
+    sndDing();
     setGame({ scores, phase: "judged", winner: w, correctText: g.q.opts[g.q.correct] });
   });
   on("noWinner", () => setGame({ phase: "judged", winner: null, correctText: g.q ? g.q.opts[g.q.correct] : null }));
