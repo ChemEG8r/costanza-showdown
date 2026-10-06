@@ -307,6 +307,12 @@ let lastRenderKey = "";
 let celebrated = 0;
 let heardRound = 0;
 
+function switchSeat() {
+  role = null;
+  try { localStorage.removeItem("showdown-role"); } catch {}
+  render(true);
+  window.scrollTo(0, 0);
+}
 function setRole(r) {
   role = r;
   try { localStorage.setItem("showdown-role", r); } catch {}
@@ -419,7 +425,9 @@ function renderPlayer() {
     }
   }
 
-  app.innerHTML = scoreboardHTML(false) + body;
+  app.innerHTML = scoreboardHTML(false) + body +
+    `<p class="statusline"><button class="navlink" id="switchSeat">🔄 Switch seat (I'm not ${esc(NAMES[me])})</button></p>`;
+  document.getElementById("switchSeat").addEventListener("click", switchSeat);
 
   const buzzer = document.getElementById("buzzer");
   if (buzzer) buzzer.addEventListener("pointerdown", async () => {
@@ -537,7 +545,8 @@ function renderHost() {
     </details>`).join("")}
   </div>
   <div class="btn-row"><button class="btn btn-danger btn-wide" id="resetBtn" style="color:var(--bad)">Reset game (scores to 0)</button></div>
-  <p class="statusline">Kids open this same link on their phones and pick their names.</p>`;
+  <p class="statusline">Kids open this same link on their phones and pick their names.
+    <button class="navlink" id="switchSeat">🔄 Switch seat</button></p>`;
 
   app.innerHTML = scoreboardHTML(true) + panel + deck;
 
@@ -549,6 +558,7 @@ function renderHost() {
   app.querySelectorAll("[data-pts]").forEach(b => b.addEventListener("click", () => setGame({ award: Number(b.dataset.pts) })));
 
   const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener("click", fn); };
+  on("switchSeat", switchSeat);
   on("openBuzz", () => setGame({ round: g.round + 1, mode: "buzzer", phase: "open", locked: [], winner: null, correctText: hostCurrent ? hostCurrent.o[0] : null, msg: "" }));
   on("awardFirst", () => {
     const bz = Object.entries(S.buzz).sort((a, b) => a[1] - b[1]);
